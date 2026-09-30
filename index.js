@@ -4,7 +4,7 @@ const path = require('path');
 
 // --- O'ZINGIZNING TOKEN VA CHAT ID RAQAMINGIZNI SHU YERGA YOZING ---
 const TOKEN = '8691570304:AAFYoATvcEIWPhZDow27noOmAfl_NEFZKzA'; 
-const ADMIN_CHAT_ID = 'BU_YERGA_TELEGRAM_ID_RAQAMINGIZNI_YOZING'; 
+const ADMIN_CHAT_ID = '1947310106'; 
 // -------------------------------------------------------------------
 
 const bot = new TelegramBot(TOKEN, { polling: true });
