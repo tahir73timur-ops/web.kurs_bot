@@ -1,31 +1,46 @@
 const TelegramBot = require('node-telegram-bot-api');
+const express = require('express');
+const path = require('path');
 
-// O'zingizning bot tokeningizni shu yerga yozing
-const TOKEN = '8691570304:AAFrEyd3Ue6xJFOu3S35UwEAs1k7rwioVRE';
+// --- O'ZINGIZNING TOKEN VA CHAT ID RAQAMINGIZNI SHU YERGA YOZING ---
+const TOKEN = 'BU_YERGA_BOT_TOKENINGIZNI_YOZING'; 
+const ADMIN_CHAT_ID = '8691570304:AAFYoATvcEIWPhZDow27noOmAfl_NEFZKzA'; 
+// -------------------------------------------------------------------
+
 const bot = new TelegramBot(TOKEN, { polling: true });
+const app = express();
 
-// Bot ishga tushganda
-console.log("Bot ishga tushdi...");
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
 
-// /start komandasi
-bot.onText(/\/start/, (msg) => {
-    const chatId = msg.chat.id;
-    bot.sendMessage(chatId, "Salom! EduKontrol Academy botiga xush kelibsiz. Saytdan kelgan arizalar shu yerga tashlanadi.");
+// Saytdan kelgan arizani qabul qilish va botga yo'naltirish
+app.post('/send-application', async (req, res) => {
+    const { name, phone, course, level, payment, comment } = req.body;
+
+    const message = `🚨 <b>Yangi Ariza Keldi!</b>\n\n` +
+                    `👤 <b>Ism:</b> ${name}\n` +
+                    `📞 <b>Telefon:</b> ${phone}\n` +
+                    `📚 <b>Kurs:</b> ${course}\n` +
+                    `📊 <b>Daraja:</b> ${level}\n` +
+                    `💳 <b>To'lov turi:</b> ${payment}\n` +
+                    `💬 <b>Izoh:</b> ${comment}`;
+
+    try {
+        await bot.sendMessage(ADMIN_CHAT_ID, message, { parse_mode: 'HTML' });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Xabar yuborishda xatolik:", error);
+        res.json({ success: false });
+    }
 });
 
-// Saytdan yoki boshqa yerdan kelgan arizalarni qabul qilib, o'zingizga yuborish funksiyasi
-// (Boshqa fayllardan chaqirish uchun buni export qilish ham mumkin)
-function sendApplicationToAdmin(adminChatId, course, name, phone) {
-    const message = `🚀 *Yangi ariza (EduKontrol Academy)*\n\n` +
-                    `📚 *Kurs:* ${course}\n` +
-                    `👤 *Ism:* ${name}\n` +
-                    `📞 *Telefon:* ${phone}`;
-
-    bot.sendMessage(adminChatId, message, { parse_mode: 'Markdown' });
-}
-
-// Misol uchun oddiy xabar kelganda
-bot.on('message', (msg) => {
+// Oddiy bot buyruqlari
+bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    console.log(`Xabar keldi: ${msg.text} | Chat ID: ${chatId}`);
+    bot.sendMessage(chatId, "Salom! EduKontrol Academy botiga xush kelibsiz. Veb-saytdan yuborilgan arizalar shu yerga kelib tushadi.");
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server ${PORT}-portda ishga tushdi va bot faol!`);
 });
