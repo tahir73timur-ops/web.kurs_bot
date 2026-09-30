@@ -3,8 +3,8 @@ const express = require('express');
 const path = require('path');
 
 // --- O'ZINGIZNING TOKEN VA CHAT ID RAQAMINGIZNI SHU YERGA YOZING ---
-const TOKEN = 'BU_YERGA_BOT_TOKENINGIZNI_YOZING'; 
-const ADMIN_CHAT_ID = '8691570304:AAFYoATvcEIWPhZDow27noOmAfl_NEFZKzA'; 
+const TOKEN = '8691570304:AAFYoATvcEIWPhZDow27noOmAfl_NEFZKzA'; 
+const ADMIN_CHAT_ID = 'BU_YERGA_TELEGRAM_ID_RAQAMINGIZNI_YOZING'; 
 // -------------------------------------------------------------------
 
 const bot = new TelegramBot(TOKEN, { polling: true });
