@@ -1,16 +1,40 @@
 const TelegramBot = require('node-telegram-bot-api');
-const axios = require('axios');
+const express = require('express');
+const path = require('path');
+const cors = require('cors');
 
-// Bot tokeningizni shu yerga yozing
-const token = '8691570304:AAFaVbRXSnDc1ExqUBQE_GPf_eZrdkCQWT0';
-const bot = new TelegramBot(token, { polling: true });
-
-// Sayt manzili
+// --- TOKEN VA ADMIN SOZLAMALARI ---
+const TOKEN = '8691570304:AAELafDMcO6CsDpqH_2cljwulDPYW7jdJ34'; 
+const ADMIN_CHAT_ID = '1947310106'; 
+const ADMIN_IDS = [1947310106]; // O'z Telegram ID raqamingiz
 const WEBSITE_URL = 'https://diyorbekweb015.netlify.app/';
 
-// Adminlar ro'yxati (O'z Telegram ID raqamingizni shu yerga yozing)
-// ID raqamingizni bilmasangiz, @userinfobot orqali bilib olishingiz mumkin
-const ADMIN_IDS = [123456789]; // <-- O'z Telegram ID raqamingizni yozing
+const bot = new TelegramBot(TOKEN, { polling: true });
+const app = express();
+
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname)));
+
+// Saytdan kelgan arizalarni qabul qilib Telegramga yuborish
+app.post('/send-application', async (req, res) => {
+    const { name, phone, course, payment, comment } = req.body;
+
+    const message = `🚀 <b>Yangi Startap Arizasi Keldi!</b>\n\n` +
+                    `👤 <b>F.I.O:</b> ${name}\n` +
+                    `📞 <b>Telefon:</b> ${phone}\n` +
+                    `📚 <b>Yo'nalish:</b> ${course}\n` +
+                    `💳 <b>To'lov turi:</b> ${payment}\n` +
+                    `💬 <b>Izoh:</b> ${comment}`;
+
+    try {
+        await bot.sendMessage(ADMIN_CHAT_ID, message, { parse_mode: 'HTML' });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Telegramga yuborishda xatolik:", error);
+        res.json({ success: false });
+    }
+});
 
 // Start komandasi
 bot.onText(/\/start/, (msg) => {
@@ -31,7 +55,6 @@ bot.onText(/\/admin/, (msg) => {
     const chatId = msg.chat.id;
     const userId = msg.from.id;
 
-    // Faqat adminlar kirishi uchun tekshiruv
     if (!ADMIN_IDS.includes(userId)) {
         return bot.sendMessage(chatId, '❌ Kechirasiz, sizda bu buyruqdan foydalanish huquqi yo\'q.');
     }
@@ -65,7 +88,6 @@ bot.on('callback_query', async (query) => {
     } else if (data === 'contact') {
         bot.sendMessage(chatId, `📍 *Manzil:* Namangan viloyati, Pop tumani\n📞 *Telefon:* +998 90 123 45 67\n🌐 *Web sayt:* ${WEBSITE_URL}`, { parse_mode: 'Markdown' });
     } 
-    // Admin panel tugmalari
     else if (data.startsWith('admin_')) {
         if (!ADMIN_IDS.includes(userId)) {
             return bot.answerCallbackQuery(query.id, { text: 'Ruxsat etilmagan!', show_alert: true });
@@ -81,6 +103,12 @@ bot.on('callback_query', async (query) => {
     }
     
     bot.answerCallbackQuery(query.id);
+});
+
+// Serverni ishga tushirish
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server ${PORT}-portda muvaffaqiyatli ishga tushdi!`);
 });
 
 console.log('Bot admin paneli bilan ishga tushdi...');
