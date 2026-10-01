@@ -4,7 +4,7 @@ const path = require('path');
 const cors = require('cors');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAELafDMcO6CsDpqH_2cljwulDPYW7jdJ34'; 
+const TOKEN = '8691570304:AAHfH-ZMeL_6z0TCqde3jaxEEp3AqYbISmI'; 
 const ADMIN_CHAT_ID = '1947310106'; 
 const ADMIN_IDS = [1947310106]; // O'z Telegram ID raqamingiz
 const WEBSITE_URL = 'https://diyorbekweb015.netlify.app/';
