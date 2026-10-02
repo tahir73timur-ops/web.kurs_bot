@@ -5,7 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAHUpfhafXnVg37A2KJKmfcCAR3tT1kenBg'; 
+const TOKEN = '8691570304:AAHPWVoFLyjXSxHcY7huOiL_OJPtN5RXVwA'; 
 const ADMIN_IDS = [1947310106]; 
 
 const bot = new TelegramBot(TOKEN, { polling: true });
