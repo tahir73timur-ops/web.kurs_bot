@@ -4,10 +4,10 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 
-// --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAHPWVoFLyjXSxHcY7huOiL_OJPtN5RXVwA'; 
+const TOKEN = '8691570304:AAE12SVIwFERnNgDVfsfQOi9o16iiotF_MM'; 
 const ADMIN_IDS = [1947310106]; 
 
+// { polling: { interval: 300, autoStart: true } } - to'qnashuvlarni oldini olish uchun
 const bot = new TelegramBot(TOKEN, { polling: true });
 const app = express();
 
@@ -15,7 +15,6 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Ma'lumotlarni saqlash uchun database.json fayli
 const DB_FILE = path.join(__dirname, 'database.json');
 
 function readDB() {
@@ -31,7 +30,6 @@ function writeDB(data) {
 
 const userState = {};
 
-// Saytdan kelgan arizalarni qabul qilish
 app.post('/send-application', async (req, res) => {
     const { name, phone, course, payment, comment } = req.body;
     const message = `🚀 <b>Saytdan Yangi Ariza Keldi!</b>\n\n` +
@@ -50,23 +48,21 @@ app.post('/send-application', async (req, res) => {
     }
 });
 
-// Yagona asosiy xabar qabul qiluvchi (dublyatsiyaning oldini oladi)
+// Xabarlarni qabul qilish (Faqat bitta listener)
 bot.on('message', async (msg) => {
+    // Agar xabar boshqa joydan yoki eskidan kelgan bo'lsa yoki matn bo'lmasa
+    if (!msg || !msg.text) return;
+
     const chatId = msg.chat.id;
-    const text = msg.text;
-
-    if (!text) return;
-
+    const text = msg.text.trim();
     const userId = msg.from.id;
     const db = readDB();
 
-    // 1. /start buyrug'i
     if (text === '/start') {
         userState[chatId] = { step: 'waiting_for_name' };
         return bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy botiga xush kelibsiz.\n\nKursga yozilish uchun iltimos, **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
     }
 
-    // 2. Admin buyruqlari: /vazifa va /eslatma
     if (text.startsWith('/vazifa ') && ADMIN_IDS.includes(userId)) {
         const taskText = text.replace('/vazifa ', '').trim();
         db.currentTask = taskText;
@@ -104,7 +100,6 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `📢 Vazifani bajarmagan ${remindCount} ta o'quvchiga eslatma yuborildi!`);
     }
 
-    // 3. Ro'yxatdan o'tish bosqichlari
     if (userState[chatId]) {
         const state = userState[chatId];
 
@@ -118,7 +113,7 @@ bot.on('message', async (msg) => {
             state.step = 'waiting_for_course';
             return bot.sendMessage(chatId, `Qaysi kursda o'qimoqchisiz? (Masalan: Frontend, HTML & CSS):`);
         } 
-        else if (state.step === 'waiting_for_course') {
+        else if (state.step === 'waiting_log' || state.step === 'waiting_for_course') {
             state.course = text;
             
             if (!db.users) db.users = {};
@@ -140,13 +135,12 @@ bot.on('message', async (msg) => {
         }
     } 
 
-    // 4. Vazifa javobini qabul qilish
     if (db.users && db.users[chatId]) {
         if (db.currentTask) {
             db.submissions[chatId] = { text: text, time: new Date().toISOString() };
             writeDB(db);
 
-            bot.sendMessage(chatId, `✅ Vazifangiz qabul qilindi va adminga yuborildi! Rahmat.`);
+            await bot.sendMessage(chatId, `✅ Vazifangiz qabul qilindi va adminga yuborildi! Rahmat.`);
 
             const student = db.users[chatId];
             await bot.sendMessage(ADMIN_IDS[0], `📥 <b>Vazifa Javobi Keldi!</b>\n\n👤 O'quvchi: ${student.name} (${student.phone})\n📝 Javob: ${text}`, { parse_mode: 'HTML' });
@@ -156,7 +150,6 @@ bot.on('message', async (msg) => {
         }
     } 
 
-    // Agar boshqa holat bo'lsa
     return bot.sendMessage(chatId, `Iltimos, avval ro'yxatdan o'tish uchun /start buyrug'ini bosing.`);
 });
 
