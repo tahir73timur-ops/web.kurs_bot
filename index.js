@@ -9,6 +9,7 @@ const ADMIN_CHAT_ID = '1947310106';
 const ADMIN_IDS = [1947310106]; 
 const WEBSITE_URL = 'https://diyorbekweb015.netlify.app/';
 
+// Bitta va yagona bot obyektini yaratish
 const bot = new TelegramBot(TOKEN, { polling: true });
 const app = express();
 
@@ -16,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Foydalanuvchilarning botdagi qadamlarini saqlash uchun vaqtinchalik xotira
+// Foydalanuvchi qadamlarini saqlash uchun xotira
 const userState = {};
 
 // Saytdan kelgan arizalarni qabul qilish
@@ -38,22 +39,17 @@ app.post('/send-application', async (req, res) => {
     }
 });
 
-// Start komandasi
+// /start komandasi bosilganda darhol Ism va Familiyani so'rash
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy (Pop tumani filiali) botiga xush kelibsiz.\n\nQuyidagi tugmalar orqali kurslarimiz bilan tanishishingiz yoki to'g'ridan-to'g'ri ariza qoldirishingiz mumkin:`, {
-        reply_markup: {
-            inline_keyboard: [
-                [{ text: '📝 Bot orqali ariza berish', callback_data: 'start_apply' }],
-                [{ text: '💰 Kurslar va Narxlar', callback_data: 'prices' }],
-                [{ text: '📍 Manzil va Aloqa', callback_data: 'contact' }],
-                [{ text: '🌐 Saytga o\'tish', url: WEBSITE_URL }]
-            ]
-        }
-    });
+    
+    // Foydalanuvchini boshlang'ich ariza holatiga o'tkazamiz
+    userState[chatId] = { step: 'waiting_for_name' };
+
+    bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy (Pop tumani filiali) botiga xush kelibsiz.\n\nKursga yozilish uchun iltimos, avval **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
 });
 
-// Inline tugmalar va so'rovnoma bosqichlari
+// Inline tugmalar (Narxlar va Manzil uchun)
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
@@ -67,15 +63,12 @@ bot.on('callback_query', async (query) => {
         bot.sendMessage(chatId, text, { parse_mode: 'Markdown' });
     } else if (data === 'contact') {
         bot.sendMessage(chatId, `📍 *Manzil:* Namangan viloyati, Pop tumani\n📞 *Telefon:* +998 90 123 45 67\n🌐 *Web sayt:* ${WEBSITE_URL}`, { parse_mode: 'Markdown' });
-    } else if (data === 'start_apply') {
-        userState[chatId] = { step: 'waiting_for_name' };
-        bot.sendMessage(chatId, `📝 *Kursga yozilish uchun ariza berish*\n\nIltimos, **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
     }
 
     bot.answerCallbackQuery(query.id);
 });
 
-// Matnli xabarlarni qabul qilish (Ariza jarayoni uchun)
+// Faqat bitta 'message' tinglovchisi (takrorlanishning oldini olish uchun)
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
     const text = msg.text;
@@ -89,11 +82,13 @@ bot.on('message', async (msg) => {
             state.name = text;
             state.step = 'waiting_for_phone';
             bot.sendMessage(chatId, `Rahmat, ${text}!\n\nEndi telefon raqamingizni yuboring (Masalan: +998 90 123 45 67):`);
-        } else if (state.step === 'waiting_for_phone') {
+        } 
+        else if (state.step === 'waiting_for_phone') {
             state.phone = text;
             state.step = 'waiting_for_course';
             bot.sendMessage(chatId, `Qaysi kursda o'qimoqchisiz? (Masalan: Frontend, HTML & CSS, Full-Stack):`);
-        } else if (state.step === 'waiting_for_course') {
+        } 
+        else if (state.step === 'waiting_for_course') {
             state.course = text;
             
             // Arizani adminga yuborish
@@ -104,9 +99,22 @@ bot.on('message', async (msg) => {
 
             await bot.sendMessage(ADMIN_CHAT_ID, adminMessage, { parse_mode: 'HTML' });
 
-            bot.sendMessage(chatId, `✅ Arizangiz muvaffaqiyatli qabul qilindi! Tez orada operatorlarimiz siz bilan bog'lanishadi.`);
+            // Foydalanuvchiga asosiy menyu tugmalari bilan javob berish
+            bot.sendMessage(chatId, `✅ Arizangiz muvaffaqiyatli qabul qilindi! Tez orada operatorlarimiz siz bilan bog'lanishadi.\n\nBoshqa bo'limlarni ko'rish uchun quyidagilardan foydalanishingiz mumkin:`, {
+                reply_markup: {
+                    inline_keyboard: [
+                        [{ text: '💰 Kurslar va Narxlar', callback_data: 'prices' }],
+                        [{ text: '📍 Manzil va Aloqa', callback_data: 'contact' }],
+                        [{ text: '🌐 Saytga o\'tish', url: WEBSITE_URL }]
+                    ]
+                }
+            });
+
             delete userState[chatId]; // Xotirani tozalash
         }
+    } else {
+        // Agar foydalanuvchi /start bosmagan bo'lsa yoki ariza jarayonida bo'lmasa
+        bot.sendMessage(chatId, `Qaytadan boshlash uchun /start buyrug'ini bosing.`);
     }
 });
 
