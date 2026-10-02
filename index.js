@@ -4,17 +4,23 @@ const path = require('path');
 const cors = require('cors');
 const fs = require('fs');
 
-const TOKEN = '8691570304:AAE12SVIwFERnNgDVfsfQOi9o16iiotF_MM'; 
+// --- TOKEN VA ADMIN SOZLAMALARI ---
+const TOKEN = '8691570304:AAE6weStPxi_rdqjJ6g0moYEZgtt3WbWjUE'; 
 const ADMIN_IDS = [1947310106]; 
+const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
 
-// { polling: { interval: 300, autoStart: true } } - to'qnashuvlarni oldini olish uchun
-const bot = new TelegramBot(TOKEN, { polling: true });
+// 1. POLLING O'CHIRILDI, WEBHOOK YOQILDI (Xatoliklarni butunlay yo'qotadi)
+const bot = new TelegramBot(TOKEN, { webHook: true });
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
+// Webhook-ni Telegram serveriga avtomatik ulash
+bot.setWebHook(`${RENDER_URL}/bot${TOKEN}`);
+
+// Ma'lumotlarni saqlash uchun database.json fayli
 const DB_FILE = path.join(__dirname, 'database.json');
 
 function readDB() {
@@ -30,6 +36,7 @@ function writeDB(data) {
 
 const userState = {};
 
+// Saytdan kelgan arizalarni qabul qilish
 app.post('/send-application', async (req, res) => {
     const { name, phone, course, payment, comment } = req.body;
     const message = `🚀 <b>Saytdan Yangi Ariza Keldi!</b>\n\n` +
@@ -48,9 +55,14 @@ app.post('/send-application', async (req, res) => {
     }
 });
 
-// Xabarlarni qabul qilish (Faqat bitta listener)
+// 2. Telegramdan keladigan xabarlarni Express orqali qabul qilish (Webhook endpoint)
+app.post(`/bot${TOKEN}`, (req, res) => {
+    bot.processUpdate(req.body);
+    res.sendStatus(200);
+});
+
+// Xabarlarni qabul qilish va qayta ishlash
 bot.on('message', async (msg) => {
-    // Agar xabar boshqa joydan yoki eskidan kelgan bo'lsa yoki matn bo'lmasa
     if (!msg || !msg.text) return;
 
     const chatId = msg.chat.id;
@@ -113,7 +125,7 @@ bot.on('message', async (msg) => {
             state.step = 'waiting_for_course';
             return bot.sendMessage(chatId, `Qaysi kursda o'qimoqchisiz? (Masalan: Frontend, HTML & CSS):`);
         } 
-        else if (state.step === 'waiting_log' || state.step === 'waiting_for_course') {
+        else if (state.step === 'waiting_for_course') {
             state.course = text;
             
             if (!db.users) db.users = {};
@@ -155,5 +167,5 @@ bot.on('message', async (msg) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server ${PORT}-portda ishga tushdi!`);
+    console.log(`Server ${PORT}-portda webhook rejimida ishga tushdi!`);
 });
