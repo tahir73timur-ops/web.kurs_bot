@@ -6,10 +6,10 @@ const fs = require('fs');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
 const TOKEN = '8691570304:AAE6weStPxi_rdqjJ6g0moYEZgtt3WbWjUE'; 
-const ADMIN_IDS = [1947310106]; 
+const ADMIN_IDS = [1947310106]; // Raqamli ID'lar
+const ADMIN_USERNAMES = ['diyorbek_2o1']; // Sizning username'ingiz admin qilindi
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
 
-// 1. POLLING O'CHIRILDI, WEBHOOK YOQILDI (Xatoliklarni butunlay yo'qotadi)
 const bot = new TelegramBot(TOKEN, { webHook: true });
 const app = express();
 
@@ -17,10 +17,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
 
-// Webhook-ni Telegram serveriga avtomatik ulash
 bot.setWebHook(`${RENDER_URL}/bot${TOKEN}`);
 
-// Ma'lumotlarni saqlash uchun database.json fayli
 const DB_FILE = path.join(__dirname, 'database.json');
 
 function readDB() {
@@ -35,6 +33,13 @@ function writeDB(data) {
 }
 
 const userState = {};
+
+// Admin ekanligini tekshiruvchi funksiya
+function isAdmin(msg) {
+    const userId = msg.from.id;
+    const username = msg.from.username;
+    return ADMIN_IDS.includes(userId) || (username && ADMIN_USERNAMES.includes(username.toLowerCase()));
+}
 
 // Saytdan kelgan arizalarni qabul qilish
 app.post('/send-application', async (req, res) => {
@@ -55,19 +60,17 @@ app.post('/send-application', async (req, res) => {
     }
 });
 
-// 2. Telegramdan keladigan xabarlarni Express orqali qabul qilish (Webhook endpoint)
 app.post(`/bot${TOKEN}`, (req, res) => {
     bot.processUpdate(req.body);
     res.sendStatus(200);
 });
 
-// Xabarlarni qabul qilish va qayta ishlash
+// Xabarlarni qabul qilish
 bot.on('message', async (msg) => {
     if (!msg || !msg.text) return;
 
     const chatId = msg.chat.id;
     const text = msg.text.trim();
-    const userId = msg.from.id;
     const db = readDB();
 
     if (text === '/start') {
@@ -75,7 +78,12 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy botiga xush kelibsiz.\n\nKursga yozilish uchun iltimos, **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
     }
 
-    if (text.startsWith('/vazifa ') && ADMIN_IDS.includes(userId)) {
+    // Admin buyrug'i: /vazifa
+    if (text.startsWith('/vazifa ')) {
+        if (!isAdmin(msg)) {
+            return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
+        }
+
         const taskText = text.replace('/vazifa ', '').trim();
         db.currentTask = taskText;
         db.submissions = {};
@@ -93,9 +101,14 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `✅ Vazifa muvaffaqiyatli ${sentCount} ta o'quvchiga yuborildi!`);
     }
 
-    if (text === '/eslatma' && ADMIN_IDS.includes(userId)) {
+    // Admin buyrug'i: /eslatma
+    if (text === '/eslatma') {
+        if (!isAdmin(msg)) {
+            return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
+        }
+
         if (!db.currentTask) {
-            return bot.sendMessage(chatId, "⚠️ Hozircha faol vazifa mavjud emas.");
+            return bot.sendMessage(chatId, "⚠️️ Hozircha faol vazifa mavjud emas.");
         }
 
         let remindCount = 0;
@@ -167,5 +180,5 @@ bot.on('message', async (msg) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server ${PORT}-portda webhook rejimida ishga tushdi!`);
+    console.log(`Server ${PORT}-portda ishga tushdi!`);
 });
