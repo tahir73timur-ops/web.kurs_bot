@@ -5,9 +5,9 @@ const cors = require('cors');
 const fs = require('fs');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAE6weStPxi_rdqjJ6g0moYEZgtt3WbWjUE'; 
+const TOKEN = '8691570304:AAEX-wlnx3y_shqvtAEV8OLCBZa_PS3yBp8'; 
 const ADMIN_IDS = [1947310106]; // Raqamli ID'lar
-const ADMIN_USERNAMES = ['diyorbek_2o1']; // Sizning username'ingiz admin qilindi
+const ADMIN_USERNAMES = ['tulashboyev_live']; // Sizning username'ingiz admin qilindi
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
 
 const bot = new TelegramBot(TOKEN, { webHook: true });
