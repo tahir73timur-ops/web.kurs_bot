@@ -5,9 +5,9 @@ const cors = require('cors');
 const fs = require('fs');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAEX-wlnx3y_shqvtAEV8OLCBZa_PS3yBp8'; 
-const ADMIN_IDS = [1947310106]; // Raqamli ID'lar
-const ADMIN_USERNAMES = ['tulashboyev_live']; // Sizning username'ingiz admin qilindi
+const TOKEN = '8691570304:AAGwTz6THtEDQWDJwBiZBZhERND9IyWsWgU'; 
+const ADMIN_IDS = [1947310106]; 
+const ADMIN_USERNAMES = ['tulashboyev_live']; // Sizning admin akkauntingiz
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
 
 const bot = new TelegramBot(TOKEN, { webHook: true });
@@ -19,6 +19,7 @@ app.use(express.static(path.join(__dirname)));
 
 bot.setWebHook(`${RENDER_URL}/bot${TOKEN}`);
 
+// Ma'lumotlarni doimiy saqlash uchun database.json fayli
 const DB_FILE = path.join(__dirname, 'database.json');
 
 function readDB() {
@@ -60,12 +61,13 @@ app.post('/send-application', async (req, res) => {
     }
 });
 
+// Telegramdan keladigan xabarlarni qabul qilish (Webhook)
 app.post(`/bot${TOKEN}`, (req, res) => {
     bot.processUpdate(req.body);
     res.sendStatus(200);
 });
 
-// Xabarlarni qabul qilish
+// Xabarlarni boshqarish
 bot.on('message', async (msg) => {
     if (!msg || !msg.text) return;
 
@@ -73,12 +75,13 @@ bot.on('message', async (msg) => {
     const text = msg.text.trim();
     const db = readDB();
 
+    // 1. /start buyrug'i
     if (text === '/start') {
         userState[chatId] = { step: 'waiting_for_name' };
         return bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy botiga xush kelibsiz.\n\nKursga yozilish uchun iltimos, **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
     }
 
-    // Admin buyrug'i: /vazifa
+    // 2. Admin buyrug'i: /vazifa [matn]
     if (text.startsWith('/vazifa ')) {
         if (!isAdmin(msg)) {
             return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
@@ -86,7 +89,7 @@ bot.on('message', async (msg) => {
 
         const taskText = text.replace('/vazifa ', '').trim();
         db.currentTask = taskText;
-        db.submissions = {};
+        db.submissions = {}; // Yangi vazifa uchun avvalgi topshiriqlarni tozalash
         writeDB(db);
 
         let sentCount = 0;
@@ -101,14 +104,14 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `✅ Vazifa muvaffaqiyatli ${sentCount} ta o'quvchiga yuborildi!`);
     }
 
-    // Admin buyrug'i: /eslatma
+    // 3. Admin buyrug'i: /eslatma (Bajarmaganlarga)
     if (text === '/eslatma') {
         if (!isAdmin(msg)) {
             return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
         }
 
         if (!db.currentTask) {
-            return bot.sendMessage(chatId, "⚠️️ Hozircha faol vazifa mavjud emas.");
+            return bot.sendMessage(chatId, "⚠️ Hozircha faol vazifa mavjud emas.");
         }
 
         let remindCount = 0;
@@ -125,6 +128,7 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `📢 Vazifani bajarmagan ${remindCount} ta o'quvchiga eslatma yuborildi!`);
     }
 
+    // 4. Ro'yxatdan o'tish bosqichlari
     if (userState[chatId]) {
         const state = userState[chatId];
 
@@ -147,7 +151,7 @@ bot.on('message', async (msg) => {
                 phone: state.phone,
                 course: state.course
             };
-            writeDB(db);
+            writeDB(db); // Ma'lumot bazaga yoziladi va saqlanadi
 
             const adminMsg = `🚀 <b>Bot Orqali Yangi O'quvchi Ro'yxatdan O'tdi!</b>\n\n` +
                              `👤 <b>F.I.O:</b> ${state.name}\n` +
@@ -160,6 +164,7 @@ bot.on('message', async (msg) => {
         }
     } 
 
+    // 5. O'quvchining vazifa javobini qabul qilish
     if (db.users && db.users[chatId]) {
         if (db.currentTask) {
             db.submissions[chatId] = { text: text, time: new Date().toISOString() };
@@ -180,5 +185,5 @@ bot.on('message', async (msg) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server ${PORT}-portda ishga tushdi!`);
+    console.log(`Server ${PORT}-portda webhook rejimida ishga tushdi!`);
 });
