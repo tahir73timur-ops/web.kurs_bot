@@ -5,10 +5,11 @@ const cors = require('cors');
 const fs = require('fs');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAFBUAurWyCAJuhmspxJa68kirr4yFtMgms'; 
+const TOKEN = '8691570304:AAEk_a2W80n3itzqh7By99Hht8UEINQWlIg'; 
 const ADMIN_IDS = [1947310106]; 
-const ADMIN_USERNAMES = ['@tulashboyev_live']; 
+const ADMIN_USERNAMES = ['diyorbek_2o1']; 
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
+const WEBSITE_URL = 'https://sulatingiz-sayti-linki.uz'; // O'z saytingiz havolasini shu yerga yozing
 
 const bot = new TelegramBot(TOKEN, { webHook: true });
 const app = express();
@@ -27,7 +28,7 @@ function readDB() {
     }
     try {
         return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    } catch (e) {
+    } e {
         return { users: {}, currentTask: null, submissions: {} };
     }
 }
@@ -79,16 +80,12 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy botiga xush kelibsiz.\n\nKursga yozilish uchun iltimos, **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
     }
 
-    // ADMIN: Ro'yxatdan o'tganlarni ko'rish buyrug'i
+    // ADMIN: Ro'yxatdan o'tganlarni ko'rish
     if (text === '/oqquvchilar') {
-        if (!isAdmin(msg)) {
-            return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
-        }
+        if (!isAdmin(msg)) return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
 
         const userKeys = Object.keys(db.users || {});
-        if (userKeys.length === 0) {
-            return bot.sendMessage(chatId, "⚠️ Hozircha bazada ro'yxatdan o'tgan o'quvchilar yo'q.");
-        }
+        if (userKeys.length === 0) return bot.sendMessage(chatId, "⚠️ Hozircha bazada ro'yxatdan o'tgan o'quvchilar yo'q.");
 
         let listText = `📋 **Ro'yxatdan o'tgan o'quvchilar (${userKeys.length} ta):**\n\n`;
         let index = 1;
@@ -102,9 +99,7 @@ bot.on('message', async (msg) => {
 
     // ADMIN: Vazifa yuborish
     if (text.startsWith('/vazifa ')) {
-        if (!isAdmin(msg)) {
-            return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
-        }
+        if (!isAdmin(msg)) return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
 
         const taskText = text.replace('/vazifa ', '').trim();
         db.currentTask = taskText;
@@ -125,13 +120,8 @@ bot.on('message', async (msg) => {
 
     // ADMIN: Eslatma yuborish
     if (text === '/eslatma') {
-        if (!isAdmin(msg)) {
-            return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
-        }
-
-        if (!db.currentTask) {
-            return bot.sendMessage(chatId, "⚠️ Hozircha faol vazifa mavjud emas.");
-        }
+        if (!isAdmin(msg)) return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
+        if (!db.currentTask) return bot.sendMessage(chatId, "⚠️ Hozircha faol vazifa mavjud emas.");
 
         let remindCount = 0;
         for (const userChatId in db.users) {
@@ -147,7 +137,7 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `📢 Vazifani bajarmagan ${remindCount} ta o'quvchiga eslatma yuborildi!`);
     }
 
-    // O'quvchi ro'yxatdan o'tish qadamlari
+    // Ro'yxatdan o'tish jarayoni
     if (userState[chatId]) {
         const state = userState[chatId];
 
@@ -159,7 +149,21 @@ bot.on('message', async (msg) => {
         else if (state.step === 'waiting_for_phone') {
             state.phone = text;
             state.step = 'waiting_for_course';
-            return bot.sendMessage(chatId, `Qaysi kursda o'qimoqchisiz? (Masalan: Frontend, HTML & CSS):`);
+
+            // Kompyuter savodxonligidan PHP gacha bo'lgan tugmalar menyusi
+            const courseKeyboard = {
+                reply_markup: {
+                    keyboard: [
+                        [{ text: '💻 Kompyuter savodxonligi' }],
+                        [{ text: '🌐 Frontend (HTML & CSS)' }, { text: '⚡ JavaScript' }],
+                        [{ text: '🚀 Backend (Node.js)' }, { text: '🐘 PHP & MySQL' }]
+                    ],
+                    resize_keyboard: true,
+                    one_time_keyboard: true
+                }
+            };
+
+            return bot.sendMessage(chatId, `Quyidagi yo'nalishlardan birini tanlang:`, courseKeyboard);
         } 
         else if (state.step === 'waiting_for_course') {
             state.course = text;
@@ -179,7 +183,13 @@ bot.on('message', async (msg) => {
             await bot.sendMessage(ADMIN_IDS[0], adminMsg, { parse_mode: 'HTML' });
 
             delete userState[chatId];
-            return bot.sendMessage(chatId, `✅ Tabriklaymiz! Ma'lumotlaringiz saqlandi va ro'yxatdan o'tdingiz. Tez orada admin tomonidan vazifalar yuboriladi.`);
+
+            // Narxlarni ko'rish uchun sayt havolasini yuborish
+            const successMessage = `✅ Tabriklaymiz, ma'lumotlaringiz muvaffaqiyatli saqlandi va ro'yxatdan o'tdingiz!\n\n` +
+                                   `💰 Kurslarimizning narxlari va to'liq ma'lumotlar bilan quyidagi sayt orqali tanishishingiz mumkin:\n` +
+                                   `🔗 ${WEBSITE_URL}`;
+
+            return bot.sendMessage(chatId, successMessage, { parse_mode: 'Markdown', reply_markup: { remove_keyboard: true } });
         }
     } 
 
