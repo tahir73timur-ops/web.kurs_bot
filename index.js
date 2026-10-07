@@ -9,7 +9,7 @@ const TOKEN = '8691570304:AAEk_a2W80n3itzqh7By99Hht8UEINQWlIg';
 const ADMIN_IDS = [1947310106]; 
 const ADMIN_USERNAMES = ['diyorbek_2o1']; 
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
-const WEBSITE_URL = 'https://sulatingiz-sayti-linki.uz'; // O'z saytingiz havolasini shu yerga yozing
+const WEBSITE_URL = 'https://diyorbekweb015.netlify.app/'; // O'z saytingiz havolasini shu yerga yozing
 
 const bot = new TelegramBot(TOKEN, { webHook: true });
 const app = express();
