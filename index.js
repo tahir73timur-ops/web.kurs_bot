@@ -28,7 +28,7 @@ function readDB() {
     }
     try {
         return JSON.parse(fs.readFileSync(DB_FILE, 'utf8'));
-    } e {
+    } catch (err) {
         return { users: {}, currentTask: null, submissions: {} };
     }
 }
@@ -80,7 +80,6 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `Assalomu alaykum! EduKontrol Academy botiga xush kelibsiz.\n\nKursga yozilish uchun iltimos, **Ism va Familiyangizni** kiriting:`, { parse_mode: 'Markdown' });
     }
 
-    // ADMIN: Ro'yxatdan o'tganlarni ko'rish
     if (text === '/oqquvchilar') {
         if (!isAdmin(msg)) return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
 
@@ -97,7 +96,6 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, listText, { parse_mode: 'Markdown' });
     }
 
-    // ADMIN: Vazifa yuborish
     if (text.startsWith('/vazifa ')) {
         if (!isAdmin(msg)) return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
 
@@ -118,7 +116,6 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `✅ Vazifa muvaffaqiyatli ${sentCount} ta o'quvchiga yuborildi!`);
     }
 
-    // ADMIN: Eslatma yuborish
     if (text === '/eslatma') {
         if (!isAdmin(msg)) return bot.sendMessage(chatId, "❌ Kechirasiz, bu buyruq faqat admin uchun.");
         if (!db.currentTask) return bot.sendMessage(chatId, "⚠️ Hozircha faol vazifa mavjud emas.");
@@ -137,7 +134,6 @@ bot.on('message', async (msg) => {
         return bot.sendMessage(chatId, `📢 Vazifani bajarmagan ${remindCount} ta o'quvchiga eslatma yuborildi!`);
     }
 
-    // Ro'yxatdan o'tish jarayoni
     if (userState[chatId]) {
         const state = userState[chatId];
 
@@ -150,7 +146,6 @@ bot.on('message', async (msg) => {
             state.phone = text;
             state.step = 'waiting_for_course';
 
-            // Kompyuter savodxonligidan PHP gacha bo'lgan tugmalar menyusi
             const courseKeyboard = {
                 reply_markup: {
                     keyboard: [
@@ -184,7 +179,6 @@ bot.on('message', async (msg) => {
 
             delete userState[chatId];
 
-            // Narxlarni ko'rish uchun sayt havolasini yuborish
             const successMessage = `✅ Tabriklaymiz, ma'lumotlaringiz muvaffaqiyatli saqlandi va ro'yxatdan o'tdingiz!\n\n` +
                                    `💰 Kurslarimizning narxlari va to'liq ma'lumotlar bilan quyidagi sayt orqali tanishishingiz mumkin:\n` +
                                    `🔗 ${WEBSITE_URL}`;
