@@ -5,7 +5,7 @@ const cors = require('cors');
 const fs = require('fs');
 
 // --- TOKEN VA ADMIN SOZLAMALARI ---
-const TOKEN = '8691570304:AAGSnEIK1mvF1Enx1rsBashyzSea2dhMoVs'; 
+const TOKEN = '8691570304:AAEjBoYq9bdWj8ZKCylUrM6MgbiN_HB4ZuA'; 
 const ADMIN_IDS = [1947310106]; 
 const ADMIN_USERNAMES = ['diyorbek_2o1']; 
 const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://web-kurs-bot-13.onrender.com';
